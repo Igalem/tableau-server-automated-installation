@@ -1,0 +1,49 @@
+---
+- name: Add jfrog Artifactory repository to apt
+  tags:
+    - always
+  apt_repository:
+    repo: "deb [trusted=yes] {{ jfrog_artifactory_base_uri }}/debian/ trusty main"
+    state: present
+    codename: trusty
+    validate_certs: false
+    filename: "/etc/apt/sources.list.d/jfrog"
+    update_cache: yes
+
+- name: Add datadog jfrog Artifactory repository to apt
+  tags:
+    - always
+  apt_repository:
+    repo: "deb [trusted=yes] {{ jfrog_artifactory_base_uri }}/datadog-remote-deb stable 7"
+    state: present
+    codename: trusty
+    validate_certs: false
+    filename: "/etc/apt/sources.list.d/jfrog"
+    update_cache: yes
+
+- name: Install datadog agent if not present
+  tags:
+    - always
+  apt:
+    name: datadog-agent
+    update_cache: yes
+    state: present
+
+- name: Install datadog agent configurations if not present
+  tags:
+    - always
+  apt:
+    name: "{{ datadog_config_name }}-dd-config-v7" # datadog_config_name name must be lowecase and fitting the configuration name in datadog-configuration repo
+    update_cache: yes
+    state: present
+
+- name: Creating a file with dd api key
+  tags:
+    - always
+  copy:
+    dest: "/etc/datadog-agent/apikey.secret"
+    group: dd-agent
+    owner: dd-agent
+    mode: "700"
+    content: "{{ dd_api_key }}"
+  notify: Restart datadog-agent

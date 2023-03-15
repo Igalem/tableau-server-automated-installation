@@ -1,0 +1,18 @@
+---
+# Installing Tableau Server
+- name: Tableau package exists Validation
+  stat:
+    path: "{{ project_dir }}/{{ tableau_rpm }}"
+  register: tableau_rpm_val
+
+- name: Download Tableau Package
+  get_url:
+    url: "{{ tableau_url_rpm }}"
+    dest: "{{ project_dir }}"
+    mode: '0440'
+  when: not tableau_rpm_val.stat.exists
+
+- name: Install Tableau Package
+  yum:
+    name: "{{ project_dir }}/{{ tableau_rpm }}"
+    state: present

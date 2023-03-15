@@ -1,0 +1,21 @@
+---
+# Firewall Configuration
+- name: Install firewalld
+  yum: 
+    name: firewalld
+    state: latest
+
+- name: Check&Start 'firewalld' service
+  ansible.builtin.systemd:
+    state: started
+    name: firewalld
+
+- command: "{{ item }}"
+  with_items:
+  - firewall-cmd --set-default-zone=public
+  - firewall-cmd --permanent --add-port=80/tcp
+  - firewall-cmd --permanent --add-port=8850/tcp
+  - firewall-cmd --permanent --add-port=27000-27010/tcp
+  - firewall-cmd --permanent --add-port=8000-9000/tcp
+  - firewall-cmd --permanent --add-port=443/tcp  
+  changed_when: false

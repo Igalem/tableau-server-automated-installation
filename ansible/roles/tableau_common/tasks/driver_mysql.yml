@@ -1,0 +1,23 @@
+---
+# Install MySQL ODBC Driver
+- name: Install MySQL ODBC Driver
+  tags:
+    - always
+  yum:
+      name: "{{ mysql_rpm }}"
+      state: latest
+
+- name: Copy odbc driver configuration files to remote
+  tags:
+    - always
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  with_items:
+    - { src: 'etc/odbcinst.ini', dest: "{{ odbcinst_dir }}", mode: 'u=rw,g=r,o=r'}
+    - { src: 'etc/odbc.ini', dest: "{{ odbc_dir }}", mode: 'u=rw,g=r,o=r'}
+    - { src: 'etc/cloudera.impalaodbc.ini', dest: "{{ cloudera_impala_odbc_dir }}", mode: 'u=rw,g=r,o=r'}
+    - { src: 'etc/cloudera.hiveodbc.ini', dest: "{{ cloudera_hive_odbc_dir }}", mode: 'u=rw,g=r,o=r'}

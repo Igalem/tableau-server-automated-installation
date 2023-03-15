@@ -1,0 +1,139 @@
+---
+# Installing & Configuring Tableau Server
+- name: Invoke Tableau Server Script Packages 
+  shell: "ls -d /opt/tableau/tableau_server/packages/scripts* | cut -d ' ' -f 9 | awk '{print $1}'"
+  register: tableau_scripts_dir_var
+  changed_when: false
+
+- name: Activating Tableau
+  ansible.builtin.shell: ./initialize-tsm --accepteula
+  args:
+    chdir: "{{ tableau_scripts_dir_var.stdout }}"
+  register: activation_msg
+  changed_when: false
+- debug:
+    msg: "{{ activation_msg.stdout }}"
+
+- shell: "source /etc/profile.d/tableau_server.sh"
+  changed_when: false
+
+- name: Creating server administrator user 
+  ansible.builtin.user:
+    name: "{{ tableau_admin_manager_user }}"
+    shell: /bin/bash
+    groups: tsmadmin
+    append: yes
+
+- name: Updating server administrator password
+  user:
+      name: "{{ tableau_admin_manager_user }}"
+      password:  "{{ tableau_admin_manager_pwd | password_hash('sha512') }}"
+  become: yes
+  changed_when: false
+
+- name: Create JAVA PsgSQL directory
+  ansible.builtin.file:
+    path: "{{ psgsql_dir }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ tableau_admin_manager_user }}"
+    group: "{{ tableau_admin_manager_user }}"
+
+- name: PsgSQL JAR file Validation
+  stat:
+    path: "{{ psgsql_dir }}/{{ psgsql_jar }}"
+  register: psgsql_jar_val
+
+- name: PsgSQL .jar folder & file configuration
+  get_url:
+    url: "{{ psgsql_url_jar }}"
+    dest: "{{ psgsql_dir }}/{{ psgsql_jar }}"
+    mode: '0755'
+  when: not psgsql_jar_val.stat.exists
+
+- name: Change file ownership, group and permissions
+  ansible.builtin.file:
+    path: "{{ psgsql_dir }}/{{ psgsql_jar }}"
+    owner: "{{ tableau_admin_manager_user }}"
+    group: "{{ tableau_admin_manager_user }}"
+    mode: '0755'
+
+- name: Invoke TSM Command Location
+  shell: "ls -d /opt/tableau/tableau_server/packages/customer-bin* | cut -d ' ' -f 9 | awk '{print $1}'"
+  register: tsm_dir_var
+  changed_when: false
+
+- name: Activate Trail version
+  ansible.builtin.command: "{{ tsm_dir_var.stdout }}/tsm licenses activate -t"
+  register: trail_activation_msg
+  changed_when: false
+- debug:
+    msg: "{{ trail_activation_msg.stdout }}"
+
+- name: Copy Template Files to remote
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ project_dir }}/{{ item.dest }}"
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: "0644"
+  with_items:
+    - { src: 'registration.j2', dest: 'registration.json' }
+    - { src: 'configuration.j2', dest: 'configuration.json' }
+    - { src: 'smtp.j2', dest: 'smtp.json' }
+
+- name: Initialize and start Tableau Server
+  command: "{{ tsm_dir_var.stdout }}/tsm {{ item.exec }}"
+  changed_when: false
+  failed_when: false
+  with_items:
+    - { exec: "register --file {{ project_dir }}/registration.json" }
+    - { exec: "settings import -f {{ project_dir }}/configuration.json" }
+    - { exec: "configuration set -k install.component.samples -v false" }
+
+- name: Check for TSM Pending-Changes 
+  shell: "{{ tsm_dir_var.stdout }}/tsm pending-changes list | tail -1 | awk '{print $3}'"
+  register: init_pending_val
+  changed_when: false
+
+- name: Applying TSM Pending-Changes 
+  command: "{{ tsm_dir_var.stdout }}/tsm pending-changes apply --ignore-prompt"
+  when: init_pending_val.stdout !='no'
+
+- name: Applying TSM Pending-Changes 
+  command: "{{ tsm_dir_var.stdout }}/tsm initialize --start-server --request-timeout 1800"
+  changed_when: false
+  failed_when: false
+
+- name: Create an Tableau application admin user
+  ansible.builtin.command: "{{ tsm_dir_var.stdout }}/tabcmd initialuser --username {{ tableau_admin_app_user }} 
+                                                                        --password {{ tableau_admin_app_pwd }} 
+                                                                        --server http://localhost"
+  register: create_app_user_msg
+  failed_when: false
+  changed_when: false
+- debug:
+    msg: "{{ create_app_user_msg }}"
+
+- name: Finalize & Applying changes
+  command: "{{ tsm_dir_var.stdout }}/tsm {{ item.exec }}"
+  changed_when: false
+  with_items:
+    - { exec: "settings import -f {{ project_dir }}/smtp.json" } 
+    - { exec: "configuration set -k backgrounder.querylimit -v {{ tableau_backgrounder_querylimit }}" }
+    - { exec: "topology set-process -n node1 -pr backgrounder -c {{ tableau_backgrounder }}" }
+    - { exec: "topology set-process -n node1 -pr cacheserver -c {{ tableau_cacheserver }}" }
+    - { exec: "topology set-process -n node1 -pr vizqlserver -c {{ tableau_vizqlserver }}" }
+
+- name: Check for TSM Pending-Changes 
+  shell: "{{ tsm_dir_var.stdout }}/tsm pending-changes list | tail -1 | awk '{print $3}'"
+  register: pending_val
+  changed_when: false      
+
+- name: Applying TSM Pending-Changes 
+  command: "{{ tsm_dir_var.stdout }}/tsm pending-changes apply --ignore-prompt"
+  when:  pending_val.stdout != 'no'
+  register: output
+- debug:
+    msg: "{{ output.stdout }}"
+  when:  pending_val.stdout != 'no'

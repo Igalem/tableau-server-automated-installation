@@ -1,0 +1,51 @@
+---
+  - name: Invoke TSM Command Location
+    shell: "ls -d /opt/tableau/tableau_server/packages/customer-bin* | cut -d ' ' -f 9 | awk '{print $1}'"
+    register: tsm_dir_var
+    changed_when: false
+
+  - name: Create SAML directory location 
+    ansible.builtin.file:
+      path: "{{ saml_dir }}"
+      state: directory
+      mode: '0755'
+
+  - name: Creating Tableau certification file
+    ansible.builtin.copy:
+      content: "{{ tableau_cert }}"
+      dest: "{{ saml_dir }}/tableau_cert.crt"
+
+  - name: Creating Tableau key file
+    ansible.builtin.copy:
+      content: "{{ tableau_key }}"
+      dest: "{{ saml_dir }}/tableau.key"
+
+  - name: Creating Tableau metadate file
+    ansible.builtin.copy:
+      content: "{{ tableau_metadata }}"
+      dest: "{{ saml_dir }}/metadata.xml"
+
+  - name: Initialize & Enabling SAML 
+    command: "{{ tsm_dir_var.stdout }}/tsm authentication saml {{ item.exec }}"
+    changed_when: false
+    failed_when: false
+    with_items:
+      - { exec: "configure -cf {{ saml_dir }}/tableau_cert.crt" }
+      - { exec: "configure -kf {{ saml_dir }}/tableau.key" }
+      - { exec: "configure -i {{ saml_dir }}/metadata.xml" }
+      - { exec: "configure -e {{ saml_url }}" }
+      - { exec: "configure -r {{ saml_url }}" }
+      - { exec: "enable" }
+
+  - name: Check for TSM Pending-Changes 
+    shell: "{{ tsm_dir_var.stdout }}/tsm pending-changes list | tail -1 | awk '{print $3}'"
+    register: pending_val
+    changed_when: false
+
+  - name: Applying TSM Pending-Changes 
+    command: "{{ tsm_dir_var.stdout }}/tsm pending-changes apply --ignore-prompt"
+    when:  pending_val.stdout != 'no'
+    register: output
+  - debug:
+      msg: "{{ output.stdout }}"
+    when:  pending_val.stdout != 'no'

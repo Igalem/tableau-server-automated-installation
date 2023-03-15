@@ -1,0 +1,88 @@
+---
+- name: Invoke TSM Command Location
+  shell: "ls -d /opt/tableau/tableau_server/packages/customer-bin* | cut -d ' ' -f 9 | awk '{print $1}'"
+  register: tsm_dir_var
+  changed_when: false
+
+- name: Setting clustercontroller with Main Node
+  command: "{{ tsm_dir_var.stdout }}/tsm {{ item.exec }}"
+  changed_when: false
+  with_items:
+    - { exec: "topology set-process -n node1 -pr clustercontroller -c 1" }
+
+- name: Check for TSM Pending-Changes 
+  shell: "{{ tsm_dir_var.stdout }}/tsm pending-changes list | tail -1 | awk '{print $3}'"
+  register: pending_val
+  changed_when: false      
+
+- name: Applying TSM Pending-Changes 
+  command: "{{ tsm_dir_var.stdout }}/tsm pending-changes apply --ignore-prompt"
+  when:  pending_val.stdout != 'no'
+  register: output
+- debug:
+    msg: "{{ output.stdout }}"
+  when:  pending_val.stdout !="no"
+
+- name: Invoke Cordinate Nodes list attached to Main
+  shell: "{{ tsm_dir_var.stdout }}/tsm topology list-nodes | sort | paste -s -d ','"
+  register: coordination_list
+  changed_when: false
+
+- name: Count nodes attached to Main
+  shell: "{{ tsm_dir_var.stdout }}/tsm topology list-nodes | wc -l"
+  register: count_nodes
+  changed_when: false
+
+- name: Applying Coordination Service (From 3 Nodes and higher)
+  command: "{{ tsm_dir_var.stdout }}/tsm topology deploy-coordination-service -n {{ coordination_list.stdout }} --ignore-prompt"
+  when: (count_nodes.stdout =="3") or (count_nodes.stdout =="5")
+  changed_when: false
+  failed_when: false
+
+- name: Applying TSM
+  command: "{{ tsm_dir_var.stdout }}/tsm start"
+  when: (count_nodes.stdout =="3") or (count_nodes.stdout =="5")
+  changed_when: false
+  failed_when: false
+  
+- name: Finalize & Applying changes
+  command: "{{ tsm_dir_var.stdout }}/tsm {{ item.exec }}"
+  changed_when: false
+  with_items:
+    - { exec: "topology set-process -n node1 -pr backgrounder -c {{ tableau_n1_backgrounder }}" }
+    - { exec: "topology set-process -n node1 -pr cacheserver -c {{ tableau_n1_cacheserver }}" }
+    - { exec: "topology set-process -n node1 -pr vizqlserver -c {{ tableau_n1_vizqlserver }}" }
+    - { exec: "topology set-process -n node1 -pr dataserver -c {{ tableau_n1_dataserver }}" }
+
+- name: Invoke Nodes list attached to Main
+  shell: "{{ tsm_dir_var.stdout }}/tsm topology list-nodes | sort | sed 's/node1//g' "
+  register: nodes_list
+  changed_when: false
+    
+- name: Finalize & Applying changes
+  shell: "{{ tsm_dir_var.stdout }}/tsm topology set-process -n {{ item }} -pr clustercontroller -c 1 &&
+           {{ tsm_dir_var.stdout }}/tsm topology set-process -n {{ item }} -pr clientfileservice -c 1 &&
+           {{ tsm_dir_var.stdout }}/tsm topology set-process -n {{ item }} -pr gateway -c 1 &&
+           {{ tsm_dir_var.stdout }}/tsm topology set-process -n {{ item }} -pr vizqlserver -c {{ tableau_n_vizqlserver }} &&
+           {{ tsm_dir_var.stdout }}/tsm topology set-process -n {{ item }} -pr vizportal -c 0 &&
+           {{ tsm_dir_var.stdout }}/tsm topology set-process -n {{ item }} -pr backgrounder -c {{ tableau_n_backgrounder }} &&
+           {{ tsm_dir_var.stdout }}/tsm topology set-process -n {{ item }} -pr cacheserver -c {{ tableau_n_cacheserver }} &&
+           {{ tsm_dir_var.stdout }}/tsm topology set-process -n {{ item }} -pr searchserver -c 0 &&
+           {{ tsm_dir_var.stdout }}/tsm topology set-process -n {{ item }} -pr dataserver -c {{ tableau_n_dataserver }} &&
+           {{ tsm_dir_var.stdout }}/tsm topology set-process -n {{ item }} -pr pgsql -c 0"
+  changed_when: false
+  loop: "{{ nodes_list.stdout_lines }}"
+  when:  item !=""
+
+- name: Check for TSM Pending-Changes 
+  shell: "{{ tsm_dir_var.stdout }}/tsm pending-changes list | tail -1 | awk '{print $3}'"
+  register: pending_val
+  changed_when: false      
+
+- name: Applying TSM Pending-Changes 
+  command: "{{ tsm_dir_var.stdout }}/tsm pending-changes apply --ignore-prompt --ignore-warnings"
+  when:  pending_val.stdout != 'no'
+  register: output
+- debug:
+    msg: "{{ output.stdout }}"
+  when:  pending_val.stdout !="no"

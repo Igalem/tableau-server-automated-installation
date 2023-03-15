@@ -1,0 +1,9 @@
+---
+# Firewall Configuration
+- name: Set firewall rich-rules 
+  command: "{{ item }}"
+  with_items:
+  - firewall-cmd --permanent --add-rich-rule="rule family=ipv4 source address={{ attach_with_nodes }}/32 port port=8000-9000 protocol=tcp accept" 
+  - firewall-cmd --permanent --add-rich-rule="rule family=ipv4 source address={{ attach_with_nodes }}/32 port port=27000-27010 protocol=tcp accept"
+  - sudo firewall-cmd --reload
+  changed_when: false

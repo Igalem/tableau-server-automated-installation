@@ -1,0 +1,12 @@
+---
+# [topology setting]
+# Main
+tableau_n1_backgrounder: 2 # {default: 2}
+tableau_n1_cacheserver: 2 # {default: 2}
+tableau_n1_vizqlserver: 2 # {default: 2}
+tableau_n1_dataserver: 2 # {default: 1}
+# Workers
+tableau_n_backgrounder: 3 # {default: 2}
+tableau_n_cacheserver: 2 # {default: 2}
+tableau_n_vizqlserver: 2 # {default: 2}
+tableau_n_dataserver: 2 # {default: 1}

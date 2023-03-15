@@ -1,0 +1,27 @@
+---
+#Starting and setting up environment packs and vars
+- name: upgrade all packages
+  tags:
+    - always
+  yum:
+    name: '*'
+    state: latest
+
+- name: Install htop
+  tags:
+    - always
+  yum:
+      name: htop
+      state: present
+
+- name: Copy environment file to remote
+  tags:
+    - always
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  with_items:
+    - { src: 'etc/environment', dest: "/etc/environment", mode: 'u=rw,g=r,o=r'}

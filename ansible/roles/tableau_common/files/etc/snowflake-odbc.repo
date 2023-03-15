@@ -1,0 +1,4 @@
+[snowflake-odbc]
+name=snowflake-odbc
+baseurl=https://sfc-repo.snowflakecomputing.com/odbc/linux/2.24.2/
+gpgkey=https://sfc-repo.snowflakecomputing.com/odbc/Snowkey-37C7086698CB005C-gpg

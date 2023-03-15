@@ -1,0 +1,22 @@
+---
+- name: Copy file with owner and permissions
+  ansible.builtin.copy:
+    src: roles/bootstrap/files/bootstrap.json
+    dest: "{{ project_dir }}/"
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+    mode: '0644'
+
+- name: Invoke Tableau Server Script Packages 
+  shell: "ls -d /opt/tableau/tableau_server/packages/scripts* | cut -d ' ' -f 9 | awk '{print $1}'"
+  register: tableau_scripts_dir_var
+  changed_when: false  
+
+- name: Attaching Node Tableau
+  ansible.builtin.shell: ./initialize-tsm -b {{ project_dir }}/bootstrap.json --accepteula -f
+  args:
+    chdir: "{{ tableau_scripts_dir_var.stdout }}"
+  register: attachment_msg  
+  changed_when: false
+- debug:
+    msg: "{{ attachment_msg.stdout }}"     

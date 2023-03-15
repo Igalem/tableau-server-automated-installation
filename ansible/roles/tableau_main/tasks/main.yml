@@ -1,0 +1,4 @@
+---
+- import_tasks: firewall.yml
+- import_tasks: tableau.yml
+- { import_tasks: saml.yml, when: saml_activation | upper == 'Y' }

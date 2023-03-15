@@ -1,0 +1,9 @@
+---
+- name: Running Tableau Server Main Node - PLAYBOOK
+  hosts: main
+  become: yes
+  become_user: root
+  
+  roles: 
+    - role: tableau_common
+    - role: tableau_main

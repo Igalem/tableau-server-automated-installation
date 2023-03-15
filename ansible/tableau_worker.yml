@@ -1,0 +1,31 @@
+---
+- name: Running Tableau Server Node attachment - PLAYBOOK
+  hosts: worker
+  become: yes
+  become_user: root
+  
+  roles: 
+    - role: tableau_common
+
+- hosts: main
+  become: yes
+  become_user: root
+  
+  roles: 
+    - role: bootstrap
+
+- hosts: worker
+  become: yes
+  become_user: root
+  
+  roles: 
+    - role: tableau_attachment
+      vars:
+          attach_with_nodes: "{{groups['main'][0]}}"
+
+- hosts: main
+  become: yes
+  become_user: root
+  
+  roles: 
+    - role: tableau_topology

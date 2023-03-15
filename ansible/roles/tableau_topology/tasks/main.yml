@@ -1,0 +1,3 @@
+---
+- import_tasks: topology.yml
+- { import_tasks: saml.yml, when: saml_activation | upper == 'Y' }

@@ -1,0 +1,8 @@
+---
+# [tableau server version]
+tableau_version: '2021-4-2'
+
+# [RPM package]
+tableau_dir_version: "{{ tableau_version | replace('-','.') }}"
+tableau_rpm: "tableau-server-{{ tableau_version }}.x86_64.rpm"
+tableau_url_rpm: "https://downloads.tableau.com/esdalt/{{ tableau_dir_version }}/{{ tableau_rpm }}"

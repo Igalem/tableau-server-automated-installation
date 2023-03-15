@@ -1,0 +1,9 @@
+---
+# Application vars:
+# [psgSQL]
+psgsql_jar: 'postgresql-42.2.22.jar'
+psgsql_url_jar: "https://downloads.tableau.com/drivers/linux/postgresql/{{ psgsql_jar }}"
+psgsql_dir: '/opt/tableau/tableau_driver/jdbc'
+
+# SAML:
+saml_dir: '/var/opt/tableau/tableau_server/data/saml'

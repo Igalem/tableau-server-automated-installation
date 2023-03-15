@@ -1,0 +1,16 @@
+---
+# Install Cloudera Impala ODBC Driver
+- name: Download Cloudera Impala ODBC package
+  tags:
+    - always
+  get_url:
+    url: "{{ impala_url_rpm }}"
+    dest: "{{ project_dir }}"
+    mode: '0440'
+
+- name: Install Cloudera Impala ODBC package
+  tags:
+    - always
+  yum:
+    name: "{{ project_dir }}/{{ impala_rpm }}"
+    state: present    

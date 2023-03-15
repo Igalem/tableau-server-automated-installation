@@ -1,0 +1,20 @@
+---
+# Install Snowflake ODBC Driver
+- name: Copy Snowflake Repo to remote
+  tags:
+    - always
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  with_items:
+    - { src: 'etc/snowflake-odbc.repo', dest: "{{ snowflake_repo }}", mode: 'u=rw,g=r,o=r'}
+
+- name: Install Snowflake ODBC Driver
+  tags:
+    - always
+  yum:
+      name: "{{ snowflake_rpm }}"
+      state: latest

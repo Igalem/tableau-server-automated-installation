@@ -1,0 +1,16 @@
+---
+# Install Cloudera HIVE ODBC Driver
+ - name: Download Cloudera HIVE ODBC package
+   tags:
+    - always
+   get_url:
+     url: "{{ hive_url_rpm }}"
+     dest: "{{ project_dir }}"
+     mode: '0440'
+
+ - name: Install Cloudera HIVE ODBC package
+   tags:
+    - always
+   yum:
+     name: "{{ project_dir }}/{{ hive_rpm }}"
+     state: present

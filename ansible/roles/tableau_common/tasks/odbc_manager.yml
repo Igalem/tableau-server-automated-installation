@@ -1,0 +1,104 @@
+---
+# Install and Configure ODBC Manager
+- name: Install ODBC driver manager
+  tags:
+    - always
+  yum:
+      name: 'libiodbc'
+      state: present
+
+- name: Install the unixODBC manager
+  tags:
+    - always
+  ignore_errors: yes
+  become: true
+  yum: pkg={{ item }} state=present
+  with_items:
+    - unixODBC
+    - unixODBC-devel
+
+- name: Install build tools (@Development tools)
+  tags:
+    - always
+  become: yes
+  yum:
+    name: "@Development tools"
+    state: present
+    
+- name: Install libsasl libraries
+  tags:
+    - always
+  ignore_errors: yes
+  become: true
+  yum: pkg={{ item }} state=present
+  with_items:
+    - cyrus-sasl-gssapi
+    - cyrus-sasl-plain
+
+- name: Download Cyrus SASL from source
+  tags:
+    - always
+  ansible.builtin.unarchive:
+    src: "{{ sasl_url }}"
+    dest: "{{ project_dir }}"
+    remote_src: yes
+  changed_when: false
+
+- name: Create a user directory for cyrus_sasl if it does not exist
+  tags:
+    - always
+  ansible.builtin.file:
+    path: /usr/local/cyrus_sasl/2_1_27
+    state: directory
+    mode: '0755'
+    recurse: yes
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+  changed_when: false
+
+- name: Create a user directory for pkgconfig if it does not exist
+  tags:
+    - always
+  ansible.builtin.file:
+    path: /usr/local/lib/pkgconfig
+    state: directory
+    mode: '0755'
+    recurse: yes
+    owner: "{{ owner }}"
+    group: "{{ group }}"
+  changed_when: false
+
+- name: Configure and define cyrus_sasl for user directore
+  tags:
+    - always
+  ansible.builtin.shell: ./configure --prefix=/usr/local/cyrus_sasl/2_1_27
+  args:
+    chdir: "{{ project_dir }}/cyrus-sasl-2.1.27"
+  changed_when: false
+
+- name: Run cyrus_sasl Makefile and install targets
+  tags:
+    - always
+  make:
+    chdir: "{{ project_dir }}/cyrus-sasl-2.1.27"
+    target: install
+  become: yes
+  changed_when: false      
+
+- name: Create a symbolic link
+  tags:
+    - always
+  file:
+    src: "/usr/local/cyrus_sasl/2_1_27/{{ item.path }}"
+    dest: "/usr/local/{{ item.dest }}"
+    state: link
+  with_items:
+    - { path: 'lib/libsasl2.la', dest: 'lib/libsasl2.la' }
+    - { path: 'lib/libsasl2.so', dest: 'lib/libsasl2.so' }
+    - { path: 'lib/libsasl2.so.3', dest: 'lib/libsasl2.so.3' }
+    - { path: 'lib/libsasl2.so.3.0.0', dest: 'lib/libsasl2.so.3.0.0' }
+    - { path: 'lib/sasl2', dest: 'sasl2' }
+    - { path: 'lib/pkgconfig/libsasl2.pc', dest: 'lib/pkgconfig/libsasl2.pc' }
+    - { path: 'sbin/pluginviewer', dest: 'sbin/pluginviewer' }
+    - { path: 'sbin/saslauthd', dest: 'sbin/saslauthd' }
+    - { path: 'sbin/testsaslauthd', dest: 'sbin/testsaslauthd' }

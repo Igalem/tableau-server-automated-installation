@@ -1,0 +1,6 @@
+---
+# [topology setting]
+tableau_backgrounder: 2 # {default: 2}
+tableau_backgrounder_querylimit: 60000 # {default: 1800}
+tableau_cacheserver: 2 # {default: 2}
+tableau_vizqlserver: 2 # {default: 2}

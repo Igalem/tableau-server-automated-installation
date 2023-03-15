@@ -1,0 +1,17 @@
+---
+- name: Invoke TSM Command Location
+  shell: "ls -d /opt/tableau/tableau_server/packages/customer-bin* | cut -d ' ' -f 9 | awk '{print $1}'"
+  register: tsm_dir_var
+  changed_when: false
+
+- name: Tableau bootstrap-file
+  ansible.builtin.shell: "{{ tsm_dir_var.stdout }}/tsm topology nodes get-bootstrap-file --file {{ project_dir }}/bootstrap.json"
+  changed_when: false
+  #failed_when: false
+  when: tsm_dir_var.stdout != ""
+  
+- name: Store bootstrap-file into control machine
+  ansible.builtin.fetch:
+    src: "{{ project_dir }}/bootstrap.json"
+    dest: roles/bootstrap/files/
+    flat: yes

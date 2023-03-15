@@ -1,0 +1,28 @@
+ansible_python_interpreter: '/usr/bin/python3'
+owner: 'xxx'
+group: 'xxx'
+project_dir: "/home/{{ owner }}"
+
+# [SMTP & group mail]
+smtp_url: 'xxxx.xxxx.com'
+smtp_mail: 'xxxx@com'
+domain: 'xx.xxxx.xx'
+nickname : 'xxxx'
+
+# [appl/manager admin user details]
+vault_address: "{{ lookup('env','VAULT_ADDR') }}"
+vault_role_id: "{{ lookup('env', 'VAULT_CREDS_USR') }}"
+vault_role_secret: "{{ lookup('env', 'VAULT_CREDS_PSW') }}"
+vault_path: "secret/show/teams/DEV_DATA_BI/Tableau"
+
+# [Invoke secrets]
+tableau_admin_manager_user: "{{ lookup('hashi_vault', 'secret={{ vault_path }}:TABLEAU_MANAGER_USER auth_method=approle role_id={{ vault_role_id }} secret_id={{ vault_role_secret }} url={{ vault_address }}')}}"
+tableau_admin_manager_pwd: "{{ lookup('hashi_vault', 'secret={{ vault_path }}:TABLEAU_MANAGER_PWD auth_method=approle role_id={{ vault_role_id }} secret_id={{ vault_role_secret }} url={{ vault_address }}')}}"
+tableau_admin_app_user: "{{ lookup('hashi_vault', 'secret={{ vault_path }}:TABLEAU_APPL_USER auth_method=approle role_id={{ vault_role_id }} secret_id={{ vault_role_secret }} url={{ vault_address }}')}}"
+tableau_admin_app_pwd: "{{ lookup('hashi_vault', 'secret={{ vault_path }}:TABLEAU_APPL_PWD auth_method=approle role_id={{ vault_role_id }} secret_id={{ vault_role_secret }} url={{ vault_address }}')}}"
+tableau_cert: "{{ lookup('hashi_vault', 'secret={{ vault_path }}:tableau_cert auth_method=approle role_id={{ vault_role_id }} secret_id={{ vault_role_secret }} url={{ vault_address }}')}}"
+tableau_key: "{{ lookup('hashi_vault', 'secret={{ vault_path }}:tableau_key auth_method=approle role_id={{ vault_role_id }} secret_id={{ vault_role_secret }} url={{ vault_address }}')}}"
+tableau_metadata: "{{ lookup('hashi_vault', 'secret={{ vault_path }}:tableau_metadata auth_method=approle role_id={{ vault_role_id }} secret_id={{ vault_role_secret }} url={{ vault_address }}')}}"
+
+saml_activation: 'N'
+saml_url: 'https://xx.xxxx.xx/'
